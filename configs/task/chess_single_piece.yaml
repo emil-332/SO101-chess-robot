@@ -1,0 +1,10 @@
+# Chess manipulation task config.
+task:
+  name: chess_single_piece
+  instruction_template: "move {piece_type} from {start_square} to {target_square}"
+  piece_types: [pawn, knight, bishop, rook, queen, king]
+  board:
+    files: [a, b, c, d, e, f, g, h]
+    ranks: [1, 2, 3, 4, 5, 6, 7, 8]
+  capture:
+    offboard_location: "<OFFBOARD_TRAY_LOCATION>"

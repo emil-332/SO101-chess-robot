@@ -1,0 +1,9 @@
+# SO-101 robot configuration (follower + leader).
+# Lab-specific values are placeholders — fill before any hardware run.
+# Do not hard-code ports in code; load them from this file.
+robot:
+  type: so101_follower
+  follower_port: "<FOLLOWER_PORT>"   # discover with: lerobot-find-port
+  leader_port: "<LEADER_PORT>"       # discover with: lerobot-find-port
+  # Joint / action / gripper / workspace limits live in
+  # configs/safety/default_limits.yaml

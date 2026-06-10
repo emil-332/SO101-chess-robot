@@ -1,0 +1,24 @@
+# pi0.5 supervised fine-tuning config. Runs on the cloud GPU (vast.ai; no local
+# CUDA). Driven via the lerobot-train CLI by scripts/train_pi05.py. Flags verified
+# against the LeRobot pi0.5 guide: https://huggingface.co/docs/lerobot/pi05
+# See docs/training_pi05.md and docs/cloud_smoke_test.md.
+policy:
+  type: pi05
+  pretrained: lerobot/pi05_base                  # --policy.pretrained_path
+  dataset_repo_id: "<HF_USER>/<DATASET_REPO_ID>"
+  dataset_root: ""                               # local root; "" resolves from the Hub
+  output_dir: "<CHECKPOINT_PATH>"
+  policy_repo_id: "<HF_USER>/<POLICY_REPO_ID>"   # where a trained policy is pushed
+  push_to_hub: false                             # true needs a real HF namespace
+  job_name: chess_pi05
+  device: cuda                                   # cloud GPU; no local CUDA
+  dtype: bfloat16
+  training:                                      # full-run defaults — tune on the GPU
+    steps: 3000
+    batch_size: 32
+    seed: 1000
+    train_expert_only: false   # true = freeze the VLM, train the action expert only
+    gradient_checkpointing: true
+    compile_model: true
+    wandb_enable: true
+    normalization_mapping: ""   # set for an un-quantiled dataset (the smoke run does)

@@ -1,0 +1,28 @@
+# Safety limits for the SO-101 safety layer. Loaded by safety/limits.py.
+#
+# [TBD] All numeric limits are PLACEHOLDERS 
+#
+# Every check defaults to enabled. Filling a value must not disable a check.
+safety:
+  joint_limits:
+    enabled: true
+    values: "<TBD>"            # per-joint [min, max] per SO-101 spec
+  action_magnitude:
+    enabled: true
+    max_abs_action: "<TBD>"
+  gripper_range:
+    enabled: true
+    min: "<TBD>"
+    max: "<TBD>"
+  workspace_bounds:
+    enabled: true
+    values: "<TBD>"            # if available
+  max_velocity: "<TBD>"
+  max_delta: "<TBD>"
+  episode_timeout_s: "<TBD>"
+  checks:
+    reject_nan_inf: true
+    reject_stale_observations: true
+    max_observation_age_s: "<TBD>"
+    detect_camera_dropout: true
+    detect_robot_disconnect: true

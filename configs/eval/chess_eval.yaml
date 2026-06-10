@@ -1,0 +1,14 @@
+# Evaluation config. Loaded by eval/evaluator.py. See docs/evaluation.md.
+eval:
+  num_episodes: "<TBD>"
+  # Hold perception fixed (metadata occupancy) so policy comparisons are not
+  # confounded by perception errors; also report end-to-end with perception.
+  occupancy_source: metadata
+  report:
+    perception_metrics: true
+    manipulation_metrics: true
+    capture_metrics: true
+  compare:
+    - pi05_supervised
+    - pi05_residual_rl
+    - pi05_hil_rl

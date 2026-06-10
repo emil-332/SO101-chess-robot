@@ -1,0 +1,21 @@
+# Dataset collection config (LeRobotDataset). Used by scripts/collect_demos.py.
+# See docs/data_collection.md and docs/perception_data_collection.md.
+dataset:
+  repo_id: "<HF_USER>/<DATASET_REPO_ID>"
+  root: "<DATASET_ROOT>"
+  fps: 30
+  stage: 1                       # dataset progression — see data_collection.md
+  successful_demos_only: true    # supervised demos: successful only
+  occupancy_source: metadata     # metadata (bootstrap) | perception (zero-shot)
+  off_board_location: "<OFFBOARD_TRAY_LOCATION>"   # capture tray; [TBD] convention
+  highlight_camera: observation.images.overhead    # camera whose squares are marked
+  cameras:                       # recorded camera streams (stable keys)
+    - observation.images.overhead
+    - observation.images.side
+  features:
+    image:
+      height: 480                # [set to your camera] recorded frame size
+      width: 640
+      channels: 3
+    state_dim: 6                 # [verify] SO-101 motor count (state vector length)
+    action_dim: 6                # [verify] SO-101 action vector length

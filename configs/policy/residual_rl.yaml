@@ -1,0 +1,10 @@
+# Residual policy learning config. 
+policy:
+  type: residual_rl
+  base_policy_checkpoint: "<CHECKPOINT_PATH>"
+  base_frozen: true
+  residual:
+    enabled: true                      # residual can be disabled via config
+    scale: 0.1                         # start small (see the doc)
+    max_residual_norm: "<TBD>"         # REQUIRED magnitude limit before any run
+    condition_on_base_action: "<TBD>"  # open decision vs. Silver et al.

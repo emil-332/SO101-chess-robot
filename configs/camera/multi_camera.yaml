@@ -1,0 +1,16 @@
+# Multi-camera setup. overhead + side/oblique.
+# Overhead feeds square grounding; side/oblique (~45-60 deg) feeds piece
+# classification; wrist is optional and unused by perception. 
+cameras:
+  overhead:
+    key: observation.images.overhead
+    index: "<CAMERA_INDEX>"
+    role: square_grounding
+  side:
+    key: observation.images.side
+    index: "<CAMERA_INDEX>"
+    role: piece_classification   # mount at ~45-60 deg (oblique)
+  wrist:
+    key: observation.images.wrist
+    index: "<CAMERA_INDEX>"
+    role: optional               # not used by perception

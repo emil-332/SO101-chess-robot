@@ -1,0 +1,8 @@
+# HIL-RL config. 
+policy:
+  type: hil_rl
+  variant: "<TBD>"
+  base_policy_checkpoint: "<CHECKPOINT_PATH>"
+  actor_learner:
+    learner_device: cloud    # learner + reward classifier on the cloud GPU
+    actor_device: local      # actor / intervention interface on the laptop

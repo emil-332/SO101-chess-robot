@@ -1,0 +1,8 @@
+# Overhead camera (primary view for board reading).
+cameras:
+  overhead:
+    key: observation.images.overhead
+    index: "<CAMERA_INDEX>"   # discover with: lerobot-find-cameras opencv
+    width: 640                # defaults; adjust to the actual camera
+    height: 480
+    fps: 30
