@@ -1,0 +1,36 @@
+# Two-stage piece classifier (occupancy + piece identity), chesscog-style.
+# Loaded by chess_robot.perception.piece_cnn_config.load_two_stage_config.
+#
+# Stage 1 (occupancy) decides empty vs occupied on a near-square crop.
+# Stage 2 (piece) classifies the 12 colour+type identities on a taller crop that
+# captures the piece rising above its square (top_pad_ratio).
+#
+# Backbones are torchvision models fine-tuned from ImageNet weights. Supported:
+# resnet18, resnet34, mobilenet_v3_small, efficientnet_b0. (chesscog used
+# InceptionV3 for the piece stage; we default to ResNet for simpler ONNX export
+# and lower GPU cost — see docs/perception_piece_cnn.md.)
+
+perception:
+  pretrained: true
+  camera: observation.images.side   # the side/oblique camera the classifier crops from
+
+  occupancy:
+    backbone: resnet18
+    input: [100, 100]               # [height, width] the crop is resized to
+    top_pad_ratio: 0.3              # small upward padding: roughly the square footprint
+
+  piece:
+    backbone: resnet34
+    input: [144, 96]                # taller than wide: capture the piece above the square
+    top_pad_ratio: 1.0              # one extra square-height of upward context
+
+  training:
+    batch_size: 64
+    head_epochs: 1                  # phase 1: train the new head only
+    full_epochs: 3                  # phase 2: fine-tune the whole network
+    head_lr: 0.001
+    full_lr: 0.0001
+    weight_decay: 0.0001
+    val_fraction: 0.15
+    seed: 1000
+    device: cuda                    # cloud GPU; the smoke profile runs on cpu too

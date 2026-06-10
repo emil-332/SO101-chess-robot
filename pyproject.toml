@@ -11,15 +11,13 @@ requires-python = ">=3.10"
 license = { file = "LICENSE" }
 # Runtime libraries. Kept light and CUDA-free so the whole dev/test loop runs on
 # the laptop. Heavy training deps (LeRobot / pi0.5, torch) live in the optional
-# `train` extra and are pinned when training is wired.
+# `train` extra and are pinned when training is wired
 dependencies = [
   "numpy>=1.26",
   "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
-# Dev toolchain — pinned exactly because it gates the verification contract
-# (ruff / mypy / pytest).
 dev = [
   "ruff==0.9.6",
   "mypy==1.15.0",
@@ -39,6 +37,20 @@ train = [
 # out of the base install; imported lazily so the package works without it.
 tools = [
   "matplotlib>=3.7",
+]
+# Perception inference on the laptop: run the exported piece-CNN ONNX models
+# (no torch). CPU/iGPU via onnxruntime; Pillow only for image-file dataset prep.
+perception = [
+  "onnxruntime>=1.17",
+  "pillow>=10.0",
+]
+# Perception training on the cloud GPU: the two-stage piece classifier. torch is
+# intentionally NOT listed (reuse the vast.ai image's torch, as with `train`);
+# torchvision supplies the ImageNet-pretrained backbones, onnx the export.
+perception-train = [
+  "torchvision>=0.17",
+  "onnx>=1.15",
+  "pillow>=10.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -62,9 +74,18 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_unreachable = true
 
-# Optional deps imported lazily (GUI tooling via `tools`, LeRobot via `train`).
+# Optional deps imported lazily (GUI tooling via `tools`, LeRobot via `train`,
+# perception training/inference via `perception` / `perception-train`).
 [[tool.mypy.overrides]]
-module = ["matplotlib.*", "lerobot.*"]
+module = [
+  "matplotlib.*",
+  "lerobot.*",
+  "torch.*",
+  "torchvision.*",
+  "onnx.*",
+  "onnxruntime.*",
+  "PIL.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
