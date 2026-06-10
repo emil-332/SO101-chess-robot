@@ -238,5 +238,7 @@ CVChess: A Deep Learning Framework https://arxiv.org/pdf/2511.11522
 
 other dataset: https://osf.io/xf3ka/wiki
 
-Create 3D chess set. Use https://makerworld.com/de/models/406463-dubrovnik-1960-bobby-fischer-chess-set?from=search#profileId-308422 
+Create 3D chess set. 
+    piece set: https://makerworld.com/de/models/406463-dubrovnik-1960-bobby-fischer-chess-set?from=search#profileId-308422
+    board: https://makerworld.com/de/models/544967-modular-chess-board?from=search#profileId-473512
 
