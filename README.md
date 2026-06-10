@@ -227,3 +227,18 @@ cameras with `lerobot-find-port` and `lerobot-find-cameras opencv`, and keep
 lab-specific values in the config files as placeholders such as `<FOLLOWER_PORT>`
 and `<CAMERA_INDEX>`. See `docs/data_collection.md` and
 `docs/perception_data_collection.md`.
+
+
+## TODO NEXT 
+
+read
+https://universe.roboflow.com/chessred-vc-task/chessred-pnvwd/dataset/9 / https://github.com/tmasouris/end-to-end-chess-recognition
+
+CVChess: A Deep Learning Framework https://arxiv.org/pdf/2511.11522
+
+other dataset: https://osf.io/xf3ka/wiki
+
+Create 3D chess set. 
+    piece set: https://makerworld.com/de/models/406463-dubrovnik-1960-bobby-fischer-chess-set?from=search#profileId-308422
+    board: https://makerworld.com/de/models/544967-modular-chess-board?from=search#profileId-473512
+
