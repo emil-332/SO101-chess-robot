@@ -1,4 +1,4 @@
-# Human-In-The-Loop RL
+# Human-In-The-Loop RL (Phase 3)
 
 This document expands Phase 3 of the Learning Strategy. It is the **second** RL
 solution, implemented after residual policy learning so the two can be

@@ -1,5 +1,8 @@
 # Architecture
 
+This document expands the Core Architecture section of `  `. It is the
+detailed reference; `  ` holds the summary.
+
 ## Design principle: perception is preprocessing, not the VLA's job
 
 The board is read **before** anything reaches pi0.5. A perception preprocessing
@@ -123,15 +126,20 @@ Rules:
 - Log the submove index so rollouts and evaluation can distinguish submove 1
   (removal) from submove 2 (placement).
 - This is capture **sequencing**, not collision-aware path planning. Avoiding
-  knocking over intermediate pieces along a trajectory remains a Non-Goal
+  knocking over intermediate pieces along a trajectory remains a Non-Goal (see
+  `  `).
 
-### Square grounding
+## Resolved design decisions
+
+These were previously open; they are now resolved as follows.
+
+### Square grounding -- RESOLVED
 
 Primary: a **learned vision model** grounds square names to image regions and
 generalizes **zero-shot** to unseen 8x8 board types. It always runs as
 **preprocessing** before the VLA, never inside the pi0.5 backbone.
 
-**Chosen approach** a learned **YOLO-nano 4-corner detector** on
+**Chosen approach (2026-06-04):** a learned **YOLO-nano 4-corner detector** on
 the overhead camera locates the board corners; a deterministic homography then
 grounds all 64 squares to image regions (`grid_from_corners` in
 `perception/square_grounding.py`). The detector is trained on the cloud GPU and
@@ -142,12 +150,12 @@ deterministic per-board calibration (supplying the four corners by hand, via
 
 ### Piece identity / occupancy -- primary path
 
-Primary: the system is given the board occupancy (and the
+Primary: **metadata-first** -- the system is given the board occupancy (and the
 instruction names the piece), which makes capture detection trivial and
 deterministic. Keep a clean interface so occupancy can come from either metadata
 (bootstrap) or the perception model (target), and they can be cross-checked.
 
-**Chosen approach:** a lightweight **per-square CNN**
+**Chosen approach (2026-06-04):** a lightweight **per-square CNN**
 (MobileNetV3 / EfficientNet-class) classifies each grounded square as empty or a
 piece (type + colour) from the oblique/side camera, trained on the cloud GPU and
 exported to ONNX/OpenVINO for the laptop. **Refinement of the earlier strict
@@ -158,7 +166,7 @@ True zero-shot piece ID remains an optional fallback. This trades a small
 per-board calibration step for materially higher accuracy; the metadata path
 still covers any board with no photos. See `perception/piece_locator.py`.
 
-### Camera setup
+### Camera setup -- RESOLVED (2026-06-04)
 
 Chosen: **overhead + side/oblique** (two cameras). The **overhead** camera feeds
 square grounding (the grid is easiest to detect from above); the **side/oblique**
@@ -192,7 +200,7 @@ committing.
 - When any module boundary, the perception interface, policy composition, robot
   interface, RL setup, or board/piece assumptions change, update this document.
 
-## Perception & preprocessing robustness
+## Perception & preprocessing robustness (2026-06-07)
 
 Hardening from a pipeline review:
 
@@ -205,7 +213,7 @@ Hardening from a pipeline review:
   (`ImageRegion`). Highlighting draws the quad polygon, so adjacent squares don't
   blur together under oblique views. (Per-square *crops* are still rectangular
   slices; perspective-warping each cell is a future improvement.)
-- **Board orientation is validated** `BoardCorners` must be given in
+- **Board orientation is validated, not assumed.** `BoardCorners` must be given in
   `a1, h1, h8, a8` order and validates a non-degenerate convex quad (catching
   swapped/garbage corners); `BoardCorners.rotated()` relabels for a known board
   rotation. Identifying which physical corner is a1 remains a calibration step
@@ -220,7 +228,8 @@ Hardening from a pipeline review:
   perception errors are caught, not silently trusted.
 - **Loud highlighting.** If highlighting is requested but no camera is grounded,
   a warning is logged (it is never a silent no-op).
-- **Board size scope.** The board is **8x8** (chess); NxN boards are out of scope. "Zero-shot generalization" means board *style/appearance*, not
+- **Board size scope.** The board is **8x8** (chess); NxN boards are out of scope
+  (  ). "Zero-shot generalization" means board *style/appearance*, not
   dimensions. Different *physical* board sizes are handled for free — the
   homography is scale-/perspective-invariant.
 - **Piece-identity generalization is few-shot, not zero-shot.** Geometry is

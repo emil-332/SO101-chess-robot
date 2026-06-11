@@ -1,4 +1,4 @@
-"""Tests for board-square representation and occupancy"""
+"""Tests for board-square representation and occupancy (  1.2)."""
 
 import pytest
 

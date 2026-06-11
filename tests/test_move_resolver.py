@@ -1,4 +1,4 @@
-"""Tests for the move resolver"""
+"""Tests for the move resolver (  1.4)."""
 
 import pytest
 

@@ -1,5 +1,8 @@
 # Safety
 
+This document expands the Safety Rules section of `  `. The summary in
+`  ` is authoritative and always loaded; this file holds the detail.
+
 **Real-robot safety is mandatory. Never remove safety checks to make
 experiments easier.**
 
@@ -42,7 +45,7 @@ If a safety check fails:
 
 ## Deployment scripts
 
-Must:
+   may modify deployment scripts directly, but must:
 
 * explain architectural changes before editing
 * preserve safety checks

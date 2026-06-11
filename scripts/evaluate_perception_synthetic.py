@@ -1,4 +1,4 @@
-"""Evaluate the perception loop on synthetic rendered boards
+"""Evaluate the perception loop on synthetic rendered boards (Tier B).
 
 Renders boards under several conditions (overhead vs oblique, clean vs noisy),
 runs the grounding + crop + colour-classifier pipeline through
@@ -8,7 +8,7 @@ numbers with no GPU/hardware, and shows how accuracy degrades under oblique view
 
 Caveat: piece colours are a controlled stand-in, not photorealistic pieces, and
 ground-truth corners are used (so grounding is trivially 1.00). This validates the
-geometry/crop/eval pipeline and robustness, but not the learned CNN's appearance
+geometry/crop/eval pipeline and robustness — not the learned CNN's appearance
 generalization.
 
     python scripts/evaluate_perception_synthetic.py

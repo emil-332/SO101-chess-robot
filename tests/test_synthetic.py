@@ -1,4 +1,4 @@
-"""Tests for synthetic data generation + offline pipeline verification"""
+"""Tests for synthetic data generation + offline pipeline verification (Tier A)."""
 
 from pathlib import Path
 

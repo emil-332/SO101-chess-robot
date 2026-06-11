@@ -1,4 +1,4 @@
-"""Tests for perception validation metrics"""
+"""Tests for perception validation metrics (  1b.3)."""
 
 import json
 from pathlib import Path

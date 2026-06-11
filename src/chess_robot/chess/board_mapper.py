@@ -1,7 +1,7 @@
 """Map square names to image regions / board coordinates via a grounded grid.
 
 Consumes a *grounded grid* (square -> image region and/or board coordinate),
-produced by board perception or by deterministic calibration as a
+produced by board perception (  1b) or by deterministic calibration as a
 bootstrap. This module does **not** ground squares from pixels — that is
 perception's job — it only resolves a square against an already-grounded grid.
 

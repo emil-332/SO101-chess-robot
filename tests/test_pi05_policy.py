@@ -1,4 +1,4 @@
-"""Tests for the pi0.5 inference wrappers"""
+"""Tests for the pi0.5 inference wrappers (  3.3)."""
 
 import numpy as np
 import pytest

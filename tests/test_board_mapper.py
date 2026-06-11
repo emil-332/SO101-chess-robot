@@ -1,4 +1,4 @@
-"""Tests for the board mapper"""
+"""Tests for the board mapper (  1.3)."""
 
 import pytest
 

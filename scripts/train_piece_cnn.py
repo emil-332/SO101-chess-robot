@@ -31,8 +31,17 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Train the two-stage piece classifier.")
     parser.add_argument("--config", type=Path, default=Path("configs/perception/piece_cnn.yaml"))
     parser.add_argument("--data", type=Path, default=None, help="prepared crop dataset (.npz)")
+    parser.add_argument(
+        "--val-data", type=Path, default=None, help="separate held-out crop dataset (.npz)"
+    )
     parser.add_argument("--stage", choices=("both", "occupancy", "piece"), default="both")
     parser.add_argument("--out-dir", type=Path, default=Path("outputs/piece_cnn"))
+    parser.add_argument(
+        "--init-dir",
+        type=Path,
+        default=None,
+        help="warm-start from {occupancy,piece}.pt here (few-shot fine-tune base)",
+    )
     parser.add_argument("--smoke", action="store_true", help="1 epoch per phase, tiny batch")
     parser.add_argument("--dry-run", action="store_true", help="validate + print plan only")
     parser.add_argument("--device", default=None, help="override config device (cpu/cuda)")
@@ -48,6 +57,9 @@ def main(argv: list[str] | None = None) -> None:
     dataset: PieceCropDataset | None = None
     if args.data is not None and args.data.exists():
         dataset = load_dataset(args.data)
+    val_dataset: PieceCropDataset | None = None
+    if args.val_data is not None and args.val_data.exists():
+        val_dataset = load_dataset(args.val_data)
 
     print("piece-CNN training plan" + (" [smoke]" if args.smoke else ""))
     print(f"  stages:    {args.stage}")
@@ -66,11 +78,18 @@ def main(argv: list[str] | None = None) -> None:
     print(f"  data:      {args.data if args.data else '-'}")
     if dataset is not None:
         print("  " + dataset.summary())
+    eval_source = f"held-out {args.val_data}" if val_dataset is not None else "internal split"
+    print(f"  eval:      {eval_source}")
+    print(f"  init:      {args.init_dir if args.init_dir else 'ImageNet weights'}")
 
     if args.dry_run:
         return
 
     if dataset is None:
+        if args.data is not None:
+            raise SystemExit(
+                f"dataset not found at {args.data}; build it first with prepare_piece_dataset.py"
+            )
         raise SystemExit(
             "--data is required for a real run (build it with prepare_piece_dataset.py)"
         )
@@ -84,6 +103,8 @@ def main(argv: list[str] | None = None) -> None:
         stage=args.stage,
         out_dir=args.out_dir,
         export=not args.no_export,
+        val_dataset=val_dataset,
+        init_dir=args.init_dir,
     )
     for name, result in results.items():
         print(

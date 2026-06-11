@@ -49,7 +49,7 @@ def _click_corners(image_path: str) -> list[Point]:
     try:
         import matplotlib.image as mpimg
         import matplotlib.pyplot as plt
-    except ImportError as exc:
+    except ImportError as exc:  # pragma: no cover - optional GUI extra
         raise SystemExit(
             "matplotlib is required for annotation: pip install -e '.[tools]'"
         ) from exc

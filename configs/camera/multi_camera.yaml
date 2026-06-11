@@ -1,6 +1,7 @@
-# Multi-camera setup. overhead + side/oblique.
+# Multi-camera setup. Camera setup RESOLVED (2026-06-04): overhead + side/oblique.
 # Overhead feeds square grounding; side/oblique (~45-60 deg) feeds piece
-# classification; wrist is optional and unused by perception. 
+# classification; wrist is optional and unused by perception. Keys are STABLE —
+# never rename them silently.
 cameras:
   overhead:
     key: observation.images.overhead

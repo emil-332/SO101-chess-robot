@@ -1,6 +1,6 @@
 """Safety layer: validates every real-robot action; blocks unsafe execution.
 
-**Skeleton** All real-robot actions must pass through this
+**Skeleton (  1.6).** All real-robot actions must pass through this
 layer. Fail-closed: :meth:`SafetyLayer.check_action` returns a
 :class:`SafetyResult` and logs any violation; :meth:`SafetyLayer.enforce` raises
 :class:`SafetyViolationError` so a caller cannot continue a rollout silently.

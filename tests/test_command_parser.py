@@ -1,4 +1,4 @@
-"""Tests for the command parser"""
+"""Tests for the command parser (  1.1)."""
 
 import pytest
 

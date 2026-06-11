@@ -1,4 +1,4 @@
-"""Tests for the pi0.5 fine-tuning config + command builder"""
+"""Tests for the pi0.5 fine-tuning config + command builder (  3.1)."""
 
 from dataclasses import replace
 from pathlib import Path

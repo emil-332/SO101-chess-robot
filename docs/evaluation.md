@@ -1,5 +1,9 @@
 # Evaluation
 
+This document expands the Evaluation section of `  `. Evaluation must be
+standardized so the three approaches can be compared fairly. The full-board /
+all-piece-types setting adds perception and capture-specific metrics.
+
 ## Perception metrics (validate separately from manipulation)
 
 The learned board-perception model is validated independently, because
@@ -75,6 +79,8 @@ Report manipulation metrics with perception held fixed (ideally with
 metadata-supplied occupancy) so policy comparisons are not confounded by
 perception errors, and separately report end-to-end numbers with the perception
 model in the loop.
+
+Do **not** add ACT or SmolVLA baselines unless explicitly requested.
 
 ## Files
 

@@ -1,0 +1,34 @@
+# Perception pipeline wiring: trained piece CNN + square grounding -> BoardState.
+# Loaded by chess_robot.perception.pipeline.load_perception_config and used by
+# scripts/run_perception.py. Swap models or recalibrate here; no code changes.
+
+perception:
+  # Two-stage piece classifier: architecture + the trained ONNX weights.
+  piece_cnn_config: configs/perception/piece_cnn.yaml
+  models:
+    # Active model. Default = the chesscog pretrain. Point these at the few-shot
+    # fine-tuned model once it exists (see docs/perception_piece_cnn.md). Weights
+    # live under models/ and are NOT committed (see models/README.md).
+    occupancy_onnx: models/piece_cnn_chesscog_2026-06-11/occupancy.onnx
+    piece_onnx: models/piece_cnn_chesscog_2026-06-11/piece.onnx
+
+  cameras:
+    grounding: observation.images.overhead   # overhead grounds + highlights squares
+    piece: observation.images.side           # side/oblique camera the CNN crops from
+
+  # Board-corner pixel coordinates (a1, h1, h8, a8 order) per camera. Fill these
+  # after the board is built, with scripts/annotate_corners.py. Leave null until
+  # then; the pipeline refuses to run an uncalibrated piece camera rather than
+  # guess. The piece (side) camera must be calibrated; overhead is optional and
+  # only used for square highlighting.
+  calibration:
+    overhead:
+      a1: null
+      h1: null
+      h8: null
+      a8: null
+    side:
+      a1: null
+      h1: null
+      h8: null
+      a8: null

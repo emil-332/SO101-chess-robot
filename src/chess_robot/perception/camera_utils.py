@@ -1,4 +1,4 @@
-"""Camera helpers for perception data collection.
+"""Camera helpers for perception data collection (  1b.2 tooling).
 
 Two jobs:
 

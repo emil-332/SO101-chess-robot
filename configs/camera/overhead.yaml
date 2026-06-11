@@ -1,4 +1,5 @@
-# Overhead camera (primary view for board reading).
+# Overhead camera (primary view for board reading). Scaffold (  0).
+# Camera observation keys are STABLE — never rename them silently.
 cameras:
   overhead:
     key: observation.images.overhead

@@ -35,7 +35,7 @@ class ParsedCommand:
     """Structured result of parsing a move command.
 
     Squares are validated algebraic strings (e.g. ``"b1"``); the richer board
-    representation is a separate concern (``board_state.py``).
+    representation is a separate concern (``board_state.py``,   1.2).
     """
 
     piece_type: PieceType

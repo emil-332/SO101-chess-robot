@@ -1,4 +1,4 @@
-"""Tests for the board-perception interface, bootstrap, and composition."""
+"""Tests for the board-perception interface, bootstrap, and composition (1b.1/1b.2)."""
 
 import pytest
 

@@ -17,7 +17,7 @@ from typing import Any
 from chess_robot.chess.board_state import BoardState, PieceType
 from chess_robot.chess.move_resolver import SubmoveRole
 
-# --- Stable LeRobot row keys (never rename silently; see CLAUDE.md) -----------
+# --- Stable LeRobot row keys (never rename silently; see   ) -----------
 INSTRUCTION_KEY = "instruction"
 OBSERVATION_STATE_KEY = "observation.state"
 ACTION_KEY = "action"

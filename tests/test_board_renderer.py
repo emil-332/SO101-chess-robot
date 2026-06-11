@@ -1,4 +1,4 @@
-"""Tests for the synthetic board renderer + colour classifier."""
+"""Tests for the synthetic board renderer + colour classifier (Tier B)."""
 
 import numpy as np
 

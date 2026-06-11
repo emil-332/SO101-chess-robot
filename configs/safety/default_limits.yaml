@@ -1,6 +1,10 @@
 # Safety limits for the SO-101 safety layer. Loaded by safety/limits.py.
 #
-# [TBD] All numeric limits are PLACEHOLDERS 
+# [TBD] All numeric limits are PLACEHOLDERS and act as the   1.6 hardware
+# gate: while any are <TBD>, SafetyLayer.is_hardware_ready() is False. DO NOT run
+# hardware until they are filled and verified against the SO-101 (1.6 follow-up +
+# robot-safety-agent review). Never remove or loosen checks to ease experiments —
+# see docs/safety.md.
 #
 # Every check defaults to enabled. Filling a value must not disable a check.
 safety:

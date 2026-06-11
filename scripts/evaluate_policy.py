@@ -1,4 +1,4 @@
-"""Evaluate a policy and report metrics
+"""Evaluate a policy and report metrics (  4.1).
 
 Reads a rollouts JSONL file (written by ``utils.logging.RolloutLogger``), computes
 the manipulation/capture/residual metrics, and prints a report. With ``--baseline``

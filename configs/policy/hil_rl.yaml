@@ -1,6 +1,8 @@
-# HIL-RL config. 
+# HIL-RL config. Scaffold (  0); filled in 6.1. See docs/hil_rl.md.
 policy:
   type: hil_rl
+  # [TBD] variant: separate/conditioned policy | residual | partial stack |
+  # adapter/LoRA — open decision (plan.md). Keep interfaces open.
   variant: "<TBD>"
   base_policy_checkpoint: "<CHECKPOINT_PATH>"
   actor_learner:

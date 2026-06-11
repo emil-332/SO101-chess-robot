@@ -77,6 +77,8 @@ scripts/                      entry points and tooling
   annotate_corners.py         click 4 board corners for calibration
   verify_pipeline.py          run mock data through every offline stage
   evaluate_perception_synthetic.py   perception accuracy on rendered boards
+  run_perception.py           run the trained perception on camera frames
+  prepare_piece_dataset.py, train_piece_cnn.py, chesscog_to_manifest.py  piece CNN
   make_smoke_dataset.py       tiny mock LeRobotDataset (cloud)
   cloud_setup.sh              vast.ai box bootstrap for the pi0.5 smoke
   train_pi05.py               build and run the lerobot-train command
@@ -87,7 +89,8 @@ src/chess_robot/
   chess/      command_parser, board_state (with FEN), board_mapper (quads),
               move_resolver (capture split-moves)
   perception/ board_perception, square_grounding (homography), piece_locator,
-              camera_utils (crops, highlighting), board_renderer (synthetic)
+              camera_utils (crops, highlighting), board_renderer (synthetic),
+              piece_cnn (+ _onnx), chesscog_adapter, pipeline (runtime factory)
   data/       schema, validation, lerobot_dataset (wrapper + preprocessing),
               synthetic (mock data + pipeline verification)
   policies/   pi05_policy (train config, command builder, inference wrappers)
@@ -96,6 +99,8 @@ src/chess_robot/
   safety/     safety_layer, limits
   eval/       metrics, evaluator, failure_labels, perception_metrics
   utils/      logging (rollout logger), config
+configs/perception/           piece_cnn.yaml (CNN arch), perception.yaml (pipeline)
+models/                       trained weights (not committed; see models/README.md)
 tests/                        unit and integration tests
 docs/                         architecture, data collection, perception data,
                               safety, training, RL, evaluation, research, cloud
@@ -110,11 +115,25 @@ Perception uses two learned models, with deterministic geometry between them.
   geometry generalizes across boards without retraining. The homography and a
   hand-calibration fallback are implemented and tested. The corner detector is
   the training follow-up and needs an annotated dataset.
-- Piece classification. A lightweight per-square CNN reads occupancy and piece
-  identity from the side camera. This part is few-shot, fine-tuned on about two
-  starting-position photos per new board. The interface is implemented; the CNN
-  needs data. A metadata path supplies occupancy in the meantime, and a synthetic
-  color-based classifier validates the geometry and crop pipeline.
+- Piece classification. This is the part we just trained, so here is exactly how
+  it works. Each square is read by a small convolutional network, in two stages,
+  following chesscog. The grounded grid gives the pixel quad of every square, so we
+  cut 64 crops from the side camera. The first stage is an occupancy classifier (a
+  ResNet-18) that decides empty against occupied on a near-square crop. Wherever it
+  says occupied, a second stage (a ResNet-34) reads a taller crop that includes the
+  piece standing above its square and sorts it into the 12 identities (the six
+  piece types, in white and black). Stitching the per-square answers back together
+  gives a full board state. Both networks start from ImageNet weights and are
+  fine-tuned in two phases: first the fresh classification head on its own, then the
+  whole network at a lower learning rate. We pretrained this on the chesscog
+  synthetic dataset, about 4,400 rendered boards, and on a held-out chesscog
+  validation split the occupancy stage reached 0.9994 and the identity stage 0.9963
+  per square. Those numbers are for chesscog's Staunton pieces. Our 3D-printed
+  pieces look different, so the next step is a few-shot fine-tune of this same base
+  on a couple of side-camera photos of the real set. Training runs on the cloud GPU
+  and the models export to ONNX, so the laptop runs inference with onnxruntime. A
+  metadata path supplies occupancy until the fine-tune lands. See
+  `docs/perception_piece_cnn.md`.
 
 The policy is pi0.5, a vision-language-action model from Physical Intelligence,
 used through LeRobot and fine-tuned on teleoperated demonstrations. The smoke run
@@ -126,12 +145,16 @@ Status summary:
 
 - Implemented and tested: the deterministic chess core, perception interfaces and
   homography grounding, the metadata and synthetic perception paths, the dataset
-  wrapper, the safety layer skeleton, the evaluation harnesses, the rollout
-  logger, and the pi0.5 training and inference wrappers.
-- Verified on a GPU: the pi0.5 fine-tuning integration ran two steps and saved a
+  wrapper, the two-stage piece CNN (training, ONNX export, and inference), the
+  safety layer skeleton, the evaluation harnesses, the rollout logger, and the
+  pi0.5 training and inference wrappers.
+- Trained on a GPU: the two-stage piece CNN, pretrained on chesscog, reaching
+  0.9994 occupancy and 0.9963 piece accuracy on a held-out chesscog validation
+  split. The pi0.5 fine-tuning integration also ran a 2-step smoke and saved a
   checkpoint with LeRobot 0.5.2.
-- Not yet trained: the corner detector, the piece CNN, and a real pi0.5
-  fine-tune. The residual and HIL-RL phases are skeletons.
+- Not yet trained: the YOLO corner detector, the few-shot fine-tune of the piece
+  CNN on our 3D-printed pieces, and a real pi0.5 fine-tune. The residual and
+  HIL-RL phases are skeletons.
 
 ## 4) Research
 
@@ -143,15 +166,10 @@ The approach builds on the following work.
   action is learned on top of the frozen base controller.
 - Human-in-the-Loop reinforcement learning (HIL-SERL), arXiv:2410.21845, with
   the LeRobot HIL-SERL guide. Used as the second comparison point.
-- Chess-from-image perception, in particular chesscog (Wölflein and Lange, 2021),
+- Chess-from-image perception, in particular chesscog (by Georg Wölflein),
   which trains on rendered boards and transfers to real ones. This informs the
   corner-detection and per-square-classifier design and the use of synthetic
   rendering.
-
-A perception design decision came out of this review. Board geometry is treated
-as zero-shot, while piece identity is treated as few-shot, since reading
-arbitrary piece styles from pixels is the harder part. The full discussion lives
-in `docs/architecture.md` and `docs/research.md`.
 
 ## 5) Pipeline example
 
@@ -211,11 +229,26 @@ python scripts/evaluate_perception_synthetic.py   # perception on rendered board
 python scripts/train_pi05.py --smoke --dry-run     # print the training command
 ```
 
+Running the trained perception on real frames (laptop):
+
+```bash
+python -m pip install -e ".[perception]"          # onnxruntime + pillow
+# point configs/perception/perception.yaml at the model weights under models/
+# and fill the board-corner calibration (scripts/annotate_corners.py), then:
+python scripts/run_perception.py --overhead frames/overhead.png --side frames/side.png
+```
+
+`scripts/run_perception.py` builds the trained two-stage CNN plus grounding from
+`configs/perception/perception.yaml` and prints the board as FEN. The weights live
+under `models/` and are not committed. The few-shot fine-tune on our 3D-printed
+pieces warm-starts from the chesscog base (`train_piece_cnn.py --init-dir`).
+
 Cloud training (vast.ai GPU). The laptop has no usable CUDA, and pi0.5 is too
 large to train there, so fine-tuning runs on a rented RTX 4090 or 5090. The only
-credential is a Hugging Face read token, set on the box and never committed. Full 
-instructions, including how to accept the gated PaliGemma license, are in 
-`docs/cloud_smoke_test.md`. The short version, run on the instance:
+credential is a Hugging Face read token, set on the box and never committed. Copy
+`.env.example` to `.env` for local reference. Full instructions, including how to
+accept the gated PaliGemma license, are in `docs/cloud_smoke_test.md`. The short
+version, run on the instance:
 
 ```bash
 export HF_TOKEN=hf_your_read_token
@@ -227,18 +260,3 @@ cameras with `lerobot-find-port` and `lerobot-find-cameras opencv`, and keep
 lab-specific values in the config files as placeholders such as `<FOLLOWER_PORT>`
 and `<CAMERA_INDEX>`. See `docs/data_collection.md` and
 `docs/perception_data_collection.md`.
-
-
-## TODO NEXT 
-
-read
-https://universe.roboflow.com/chessred-vc-task/chessred-pnvwd/dataset/9 / https://github.com/tmasouris/end-to-end-chess-recognition
-
-CVChess: A Deep Learning Framework https://arxiv.org/pdf/2511.11522
-
-other dataset: https://osf.io/xf3ka/wiki
-
-Create 3D chess set. 
-    piece set: https://makerworld.com/de/models/406463-dubrovnik-1960-bobby-fischer-chess-set?from=search#profileId-308422
-    board: https://makerworld.com/de/models/544967-modular-chess-board?from=search#profileId-473512
-

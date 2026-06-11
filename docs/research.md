@@ -1,5 +1,8 @@
 # Research References
 
+Grounding references for the project. Use these to verify that implementations
+match the intended papers.
+
 ## pi0.5 / LeRobot
 
 ```text

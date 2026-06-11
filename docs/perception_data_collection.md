@@ -5,7 +5,7 @@ preprocessing. This is **separate** from the LeRobotDataset of
 teleoperated robot demonstrations — perception data is just **board
 photos + labels**; no robot is needed.
 
-Perception approach: a YOLO-nano
+Perception approach (resolved 2026-06-04, see `architecture.md`): a YOLO-nano
 4-corner detector + homography grounding on the **overhead** camera, and a
 lightweight per-square CNN on the **side/oblique** camera. Geometry is zero-shot;
 piece classification is **few-shot** (~2 starting-position photos per new board).
@@ -92,6 +92,10 @@ Eval manifest (C), read by `load_perception_samples`:
  "board_type": "boardX", "held_out": true, "capture_targets": ["e4", "d5"]}
 ```
 
+Mapping to code types: `corners` / `overhead_corners` → `BoardCorners` →
+`grid_from_corners` → `GroundedGrid`; `fen` → `BoardState.from_fen`; an eval row →
+one `PerceptionSample`.
+
 ## Collection procedure
 
 1. **Fix the rig:** mount overhead + side cameras, fix the board base, keep them
@@ -120,4 +124,4 @@ board colour/material · piece set & style · lighting/shadows · background clu
   `extract_square_crops`, `square_label`, `labeled_square_crops`.
 - `chess_robot.eval.perception_metrics` — `load_perception_samples`,
   `evaluate_perception`, and the five metrics.
-- `chess_robot.chess.board_state.BoardState.from_fen` — FEN -> occupancy.
+- `chess_robot.chess.board_state.BoardState.from_fen` — FEN → occupancy.

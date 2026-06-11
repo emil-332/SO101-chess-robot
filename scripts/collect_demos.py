@@ -1,8 +1,7 @@
 """Collect teleoperated demonstrations into a LeRobotDataset.
 
 the offline ``--dry-run`` path validates the dataset structure and
-the perception preprocessing without any hardware or LeRobot. The real recording
-loop needs a pinned LeRobot + a connected SO-101
+the perception preprocessing without any hardware or LeRobot.
 
     python scripts/collect_demos.py --dry-run \
         --config configs/dataset/collect_chess_demos.yaml \
@@ -49,10 +48,10 @@ def main() -> None:
     config = load_dataset_config(args.config)
     if not args.dry_run:
         raise SystemExit(
-            "TODO; run with --dry-run for now."
+            "Real recording is wired at   2.2; run with --dry-run for now."
         )
 
-    # Offline dry run: metadata occupancy on the standard start position
+    # Offline dry run: metadata occupancy on the standard start position.
     perception = MetadataBoardPerception(BoardState.standard_starting_position())
     resolver = MoveResolver(OffBoardLocation(config.off_board_location or "capture_tray"))
     recorder = ChessDemoRecorder(config, perception, resolver)

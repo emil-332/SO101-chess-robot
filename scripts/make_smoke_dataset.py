@@ -1,9 +1,9 @@
-"""Create a tiny mock LeRobotDataset for a pi0.5 smoke run.
+"""Create a tiny mock LeRobotDataset for the Option A pi0.5 smoke run.
 
 Runs on the cloud GPU box (any machine with LeRobot installed). Builds a few
 episodes of synthetic frames + random state/action with a real instruction, in
 the LeRobot dataset format, so ``lerobot-train`` can consume it. The content is
-**mock** - this validates the LeRobot/pi0.5 integration.
+**mock** — this validates the LeRobot/pi0.5 integration, not learning.
 
     python scripts/make_smoke_dataset.py --repo-id local/chess_smoke
 
@@ -84,7 +84,7 @@ def main() -> None:
                 np.float32
             )
             frame["action"] = rng.standard_normal(config.action_dim).astype(np.float32)
-            # LeRobot 0.5.x: the task is a key in the frame dict (no `task=` kwarg)
+            # LeRobot 0.5.x: the task is a key in the frame dict (no `task=` kwarg).
             frame["task"] = instruction
             dataset.add_frame(frame)
         dataset.save_episode()

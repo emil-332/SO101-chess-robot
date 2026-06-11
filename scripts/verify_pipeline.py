@@ -1,4 +1,4 @@
-"""Verify the offline pipeline end-to-end with synthetic data
+"""Verify the offline pipeline end-to-end with synthetic data (Tier A).
 
 Runs mock data through every offline stage (perception -> resolve -> preprocess ->
 mock policy -> safety -> rollout logging -> evaluation, plus dataset schema and the

@@ -1,5 +1,7 @@
 """Scaffold smoke test: every package and subpackage imports cleanly.
 
+This guarantees the   0 repo structure is importable before any feature
+code lands. Feature-specific tests live in the other test modules.
 """
 
 import importlib

@@ -1,4 +1,4 @@
-"""Tests for camera / crop utilities"""
+"""Tests for camera / crop utilities (  1b.2 tooling)."""
 
 import numpy as np
 import pytest

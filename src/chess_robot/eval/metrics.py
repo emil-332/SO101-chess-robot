@@ -1,4 +1,4 @@
-"""Manipulation / capture / residual evaluation metrics.
+"""Manipulation / capture / residual evaluation metrics (  4.1).
 
 Standardized so the three approaches (pi0.5 supervised, +residual RL, +HIL-RL)
 compare fairly (see ``docs/evaluation.md``). :func:`evaluate_episodes` aggregates

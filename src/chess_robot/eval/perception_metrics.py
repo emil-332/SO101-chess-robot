@@ -1,4 +1,4 @@
-"""Perception validation metrics
+"""Perception validation metrics (  1b.3).
 
 The board-perception model is validated **independently** of manipulation,
 because the deterministic move logic trusts its output (see
@@ -13,7 +13,7 @@ because the deterministic move logic trusts its output (see
 :func:`evaluate_perception` runs a :class:`BoardPerception` over labeled
 :class:`PerceptionSample` s and micro-averages each metric. Metrics with no data
 report ``None`` rather than a misleading ``0.0``. This is separate from the
-manipulation evaluation
+manipulation evaluation (  4.1, ``eval/metrics.py``).
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
 """Replay buffer for RL.
 
-Stub
+Scaffold stub (  0 — see plan.md). Implemented in   5.2.
 """

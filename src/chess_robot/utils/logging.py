@@ -1,7 +1,7 @@
 """Rollout logger (observations, actions, rewards, interventions, submoves).
 
 Append-only JSONL logger for autonomous / RL / HIL rollouts. Stored **separately**
-from supervised demonstrations: pass an autonomous-rollout directory.
+from supervised demonstrations (  ): pass an autonomous-rollout directory.
 Each episode is one JSON line with its steps. Per step it records the submove
 index/role, observation state, base/residual/final actions (+ residual norm),
 reward, intervention/corrected action, safety-violation flag, failure type, and

@@ -1,4 +1,4 @@
 """Robot observation reading and packaging.
 
-Stub
+Scaffold stub (  0 — see plan.md). Implemented in   2.x.
 """

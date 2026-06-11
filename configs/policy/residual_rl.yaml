@@ -1,4 +1,5 @@
-# Residual policy learning config. 
+# Residual policy learning config. Scaffold; filled in 5.x.
+# See docs/residual_policy_learning.md.
 policy:
   type: residual_rl
   base_policy_checkpoint: "<CHECKPOINT_PATH>"

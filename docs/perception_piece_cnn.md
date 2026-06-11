@@ -101,24 +101,126 @@ Steps 2 and 3 need captured data or meshes and are not implemented yet. Everythi
 in steps 1's tooling (prep, train, export, inference, evaluation) is implemented
 and tested.
 
-## Train on the cloud GPU
+## Cloud runbook (vast.ai)
+
+Rent an RTX 4090/5090 box (same as the pi0.5 smoke), clone the repo, then:
 
 ```bash
-# on the vast.ai box, in the repo
 pip install -e ".[perception-train]"   # torchvision + onnx (torch from the image)
-
-# 1) build a crop dataset (manifest = chesscog synthetic, or renderer for a smoke)
-python scripts/prepare_piece_dataset.py --source manifest \
-    --manifest labels.json --images-root images/ --out datasets/piece.npz
-
-# 2) train both stages and export ONNX
-python scripts/train_piece_cnn.py --data datasets/piece.npz \
-    --out-dir outputs/piece_cnn --stage both
 ```
 
+### Step 1: renderer smoke (verify the torch path, minutes, ~cents)
+
+```bash
+bash scripts/piece_cnn_smoke.sh
+```
+
+This builds a tiny rendered crop set and runs `train_piece_cnn.py --smoke` (1 epoch
+per phase, both stages). Success = two checkpoints + two ONNX files under
+`outputs/piece_cnn_smoke` and finite val accuracy printed. The flat renderer does
+not teach real appearance; this only confirms prep -> train -> export runs.
+
+### Step 2: download a split and verify orientation
+
+```bash
+pip install osfclient
+osf -p xf3ka list   # -> osfstorage/{train.zip,train.z01,val.zip,test.zip}
+
+# val first (small): unzips to a val/ dir of PNG + JSON
+osf -p xf3ka fetch osfstorage/val.zip val.zip && unzip val.zip
+
+# convert + orientation preview
+python scripts/chesscog_to_manifest.py --chesscog-dir val \
+    --out manifests/val.json --preview 4
+#   ^ inspect manifests/preview/ FIRST. Each `*_<square>_<piece>.png` crop must
+#     show the named piece (e.g. *_e1_white_king.png shows a white king). If a crop
+#     shows the wrong piece, the corner->square mapping is flipped: stop and report.
+```
+
+### Step 3: train
+
+```bash
+# quick real-data check: train on val with an internal split (minutes, no big download)
+python scripts/prepare_piece_dataset.py --source manifest \
+    --manifest manifests/val.json --images-root val --out datasets/piece_val.npz
+python scripts/train_piece_cnn.py --data datasets/piece_val.npz \
+    --out-dir outputs/piece_cnn_val --stage both
+
+# full pretrain: download + merge the train split, convert, build, train, eval on val
+osf -p xf3ka fetch osfstorage/train.zip train.zip
+osf -p xf3ka fetch osfstorage/train.z01 train.z01
+zip -s 0 train.zip --out train_full.zip && unzip train_full.zip   # -> train/
+python scripts/chesscog_to_manifest.py --chesscog-dir train --out manifests/train.json
+python scripts/prepare_piece_dataset.py --source manifest \
+    --manifest manifests/train.json --images-root train --out datasets/piece_train.npz
+python scripts/train_piece_cnn.py --data datasets/piece_train.npz \
+    --val-data datasets/piece_val.npz --out-dir outputs/piece_cnn --stage both
+```
+
+`--val-data` evaluates on the separate val set (honest held-out accuracy); without
+it the script uses an internal split of `--data`. The full train set is large
+(~4,400 images -> a multi-GB `.npz` built in memory); if prepare runs out of RAM,
+cap it with `--limit` on the converter or build in chunks. Free disk after
+unzipping by deleting `train.zip`, `train.z01`, `train_full.zip`.
+
 Outputs: `occupancy.pt` / `piece.pt` (checkpoints) and `occupancy.onnx` /
-`piece.onnx` (for the laptop). Copy the ONNX models to the laptop and load them
-with `OnnxTwoStageClassifier.from_paths(config, occ_onnx, piece_onnx)`.
+`piece.onnx` (for the laptop). Copy the ONNX models to the laptop, store them under
+`models/<name>/` (kept out of git, see `models/README.md`), and point the
+perception config at them.
+
+### Step 4 (later, needs our data): few-shot fine-tune on the 3D-printed set
+
+This adapts the chesscog base to the real pieces. It warm-starts from the chesscog
+checkpoint instead of ImageNet, so a handful of photos is enough.
+
+```bash
+# 1) photograph the starting position from the side camera (a few boards),
+#    label corners with scripts/annotate_corners.py, write a small manifest
+#    (image, corners, fen), then build crops:
+python scripts/prepare_piece_dataset.py --source manifest \
+    --manifest manifests/ours.json --images-root photos/ --out datasets/piece_ours.npz
+
+# 2) fine-tune from the chesscog base (--init-dir), at a lower learning rate
+#    (set head_lr/full_lr lower in configs/perception/piece_cnn.yaml):
+python scripts/train_piece_cnn.py --data datasets/piece_ours.npz \
+    --init-dir models/piece_cnn_chesscog_2026-06-11 \
+    --out-dir outputs/piece_cnn_ours --stage both
+```
+
+Then copy the new `*.onnx` into `models/<name>/` and update
+`configs/perception/perception.yaml` to point at them. Nothing else changes.
+
+## Running it in the pipeline
+
+`configs/perception/perception.yaml` wires the trained classifier and the board
+grounding into a `BoardPerception` (the factory is
+`chess_robot.perception.pipeline.build_board_perception`). The config holds the
+model paths and the per-camera board-corner calibration; swapping models or
+recalibrating is a config edit, no code change.
+
+```bash
+pip install -e ".[perception]"     # laptop: onnxruntime + pillow
+# calibrate the board corners into the config first (annotate_corners.py), then:
+python scripts/run_perception.py --overhead frames/overhead.png --side frames/side.png
+```
+
+It prints the perceived position as FEN. `--metadata-fen <placement>` cross-checks
+the reading against a known position. The config ships uncalibrated (null corners)
+and the pipeline refuses to run an uncalibrated piece camera rather than guess, so
+fill `calibration.side` (and optionally `calibration.overhead`) once the board is
+built. The trained-model wiring itself is verified: the exported ONNX models load
+and run through this factory on the laptop with onnxruntime.
+
+### Troubleshooting
+
+- `ModuleNotFoundError: No module named 'onnxscript'` at export: recent torch
+  routes `torch.onnx.export` through the dynamo exporter, which needs onnxscript.
+  It is in the `perception-train` extra; if the image predates that, run
+  `pip install onnxscript` and re-run. (Training checkpoints `*.pt` are saved
+  before export, so only the `*.onnx` files are missing.)
+- ImageNet backbone weights fail to download: set `pretrained: false` in
+  `configs/perception/piece_cnn.yaml` (fine for a plumbing smoke; for the real run
+  keep it true).
 
 ## Evaluation
 

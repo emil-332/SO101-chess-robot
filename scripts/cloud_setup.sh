@@ -5,20 +5,20 @@
 # from the repo root. Requires HF_TOKEN in the environment (a Hugging Face read
 # token). NEVER commit the token. See docs/cloud_smoke_test.md.
 #
-#   export HF_TOKEN=hf_...
+#   export HF_TOKEN=hf_...        # do NOT paste into git
 #   bash scripts/cloud_setup.sh
 set -euo pipefail
 
 : "${HF_TOKEN:?Set HF_TOKEN (Hugging Face read token) before running}"
 
-# 1. LeRobot with pi0.5 support.
+# 1. LeRobot with pi0.5 support (from source — the verified path).
 if [ ! -d lerobot ]; then
   git clone https://github.com/huggingface/lerobot.git
 fi
 pip install -e "./lerobot[pi,dataset,training]"
 
 # 2. This project (provides the dataset generator + train wrapper). Also put src
-#    on PYTHONPATH directly
+#    on PYTHONPATH directly — editable installs don't always expose subpackages.
 pip install -e .
 export PYTHONPATH="$(pwd)/src:${PYTHONPATH:-}"
 

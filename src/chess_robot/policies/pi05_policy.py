@@ -1,4 +1,4 @@
-"""pi0.5 policy — supervised fine-tuning config + command builder
+"""pi0.5 policy — supervised fine-tuning config + command builder (  3.1).
 
 Fine-tuning runs on the cloud GPU (vast.ai; no local CUDA) **through LeRobot**.
 Rather than depend on a specific LeRobot Python training API, we drive its
@@ -6,6 +6,8 @@ documented ``lerobot-train`` CLI: :func:`build_train_command` turns a
 :class:`Pi05TrainConfig` into the command argv. The exact flag names are verified
 against the pinned LeRobot during the cloud run (see ``docs/training_pi05.md``).
 
+The pi0.5 **inference wrapper** (`Pi05Policy`, the laptop client to a remote
+policy server) lands at   3.3.
 """
 
 from __future__ import annotations
@@ -145,7 +147,7 @@ def unfilled_placeholders(config: Pi05TrainConfig) -> list[str]:
     return [name for name, value in candidates.items() if "<" in value and ">" in value]
 
 
-# --- Inference: laptop client returning a base action ---------
+# --- Inference (  3.3): laptop client returning a base action ---------
 
 Observation = Mapping[str, Any]
 STATE_KEY = "observation.state"
@@ -188,7 +190,7 @@ class RemotePi05Policy(Pi05Policy):
     observation and receives the base action. Image transport is pluggable via
     ``image_encoder`` (default: images are not sent — set an encoder, e.g. base64
     PNG, matching the deployed server). The exact server contract is finalized
-    when the policy server is stood up
+    when the policy server is stood up (  3.2/3.3, cloud).
     """
 
     def __init__(

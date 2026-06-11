@@ -1,4 +1,7 @@
-# Training pi0.5
+# Training pi0.5 (Phase 1: Supervised Fine-Tuning)
+
+This document expands Phase 1 of the Learning Strategy. pi0.5 is used **through
+LeRobot** where possible.
 
 LeRobot pi0.5 guide: https://huggingface.co/docs/lerobot/pi05
 

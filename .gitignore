@@ -24,7 +24,8 @@ ENV/
 *.local
 
 # ---- Datasets (tracked separately, e.g. on the Hugging Face Hub) ----
-datasets/
+# Anchored to the repo root so they don't match the src/chess_robot/data package.
+/datasets/
 *.lerobot/
 *.parquet
 *.mp4
@@ -39,6 +40,13 @@ outputs/
 *.pt
 *.pth
 *.safetensors
+*.onnx
+*.onnx.data
+*.tgz
+*.tar.gz
+# Trained weights live under models/ (kept out of git); README.md is the exception.
+/models/*
+!/models/README.md
 
 # ---- Logs / experiment tracking ----
 logs/

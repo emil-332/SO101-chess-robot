@@ -1,5 +1,7 @@
 # Data Collection & Dataset Design
 
+This document expands the Dataset Design section of `  `.
+
 Use **LeRobotDataset** format throughout.
 
 Teleoperation is performed on a **full 8x8 board with all chess pieces

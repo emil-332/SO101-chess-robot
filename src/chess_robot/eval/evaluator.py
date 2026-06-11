@@ -1,4 +1,4 @@
-"""Evaluation harness / runner
+"""Evaluation harness / runner (  4.1).
 
 Loads the eval config, maps logged rollouts (from ``utils.logging.RolloutLogger``)
 into :class:`EvalEpisode` s, and produces a :class:`MetricReport`. Heavy eval jobs

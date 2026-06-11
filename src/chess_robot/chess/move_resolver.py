@@ -12,7 +12,7 @@ A non-capturing move is a single submove (``move``). Each submove carries the
 board squares to highlight in its observation. This is capture *sequencing*,
 deterministic preprocessing — **not** collision-aware path planning, and it does
 no chess-legality reasoning (a same-colour "capture" still splits). The submove
-index/role/captured-piece fields mirror the dataset schema.
+index/role/captured-piece fields mirror the dataset schema (  1.5).
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Tests for square grounding / homography geometry"""
+"""Tests for square grounding / homography geometry (  1b.2)."""
 
 import pytest
 

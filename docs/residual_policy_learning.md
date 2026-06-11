@@ -1,4 +1,7 @@
-# Residual Policy Learning
+# Residual Policy Learning (Phase 2)
+
+This document expands Phase 2 of the Learning Strategy. It is the **first** RL
+solution to implement.
 
 Reference: Tom Silver et al., "Residual Policy Learning", arXiv:1812.06298
 (https://arxiv.org/abs/1812.06298).
