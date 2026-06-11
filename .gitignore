@@ -24,7 +24,6 @@ ENV/
 *.local
 
 # ---- Datasets (tracked separately, e.g. on the Hugging Face Hub) ----
-data/
 datasets/
 *.lerobot/
 *.parquet
