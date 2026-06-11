@@ -220,8 +220,7 @@ Hardening from a pipeline review:
   perception errors are caught, not silently trusted.
 - **Loud highlighting.** If highlighting is requested but no camera is grounded,
   a warning is logged (it is never a silent no-op).
-- **Board size scope.** The board is **8x8** (chess); NxN boards are out of scope
-  (CLAUDE.md). "Zero-shot generalization" means board *style/appearance*, not
+- **Board size scope.** The board is **8x8** (chess); NxN boards are out of scope. "Zero-shot generalization" means board *style/appearance*, not
   dimensions. Different *physical* board sizes are handled for free — the
   homography is scale-/perspective-invariant.
 - **Piece-identity generalization is few-shot, not zero-shot.** Geometry is

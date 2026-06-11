@@ -42,7 +42,7 @@ If a safety check fails:
 
 ## Deployment scripts
 
-Claude may modify deployment scripts directly, but must:
+Must:
 
 * explain architectural changes before editing
 * preserve safety checks

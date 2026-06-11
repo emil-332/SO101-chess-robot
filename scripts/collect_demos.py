@@ -49,7 +49,7 @@ def main() -> None:
     config = load_dataset_config(args.config)
     if not args.dry_run:
         raise SystemExit(
-            "Real recording is wired at Milestone 2.2; run with --dry-run for now."
+            "TODO; run with --dry-run for now."
         )
 
     # Offline dry run: metadata occupancy on the standard start position
