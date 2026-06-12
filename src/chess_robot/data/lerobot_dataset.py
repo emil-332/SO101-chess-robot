@@ -310,9 +310,8 @@ class ChessDemoRecorder:
     def record_episode(self) -> None:
         """Record one teleoperated episode into a LeRobotDataset.
 
-        Wired at   2.2 (requires a pinned LeRobot + a connected SO-101).
+        Wired later (requires a pinned LeRobot + a connected SO-101).
         """
         raise NotImplementedError(
-            "Real LeRobot recording is wired at   2.2 (needs a pinned "
-            "LeRobot + a connected SO-101). Use dry_run() for the offline check."
+            "Real LeRobot recording is wired later. Use dry_run() for the offline check."
         )
