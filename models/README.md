@@ -1,9 +1,22 @@
 # models/
 
-Trained model weights live here. They are **not** committed to git (see the
-repo `.gitignore`); only this README is tracked. Keep the actual `.pt` / `.onnx`
-files out of version control and back them up separately (laptop folder, the
-Hugging Face Hub, etc.).
+Trained model weights live here. Code lives on GitHub, weights
+live on the Hugging Face Hub — clone the repo for the code, download the weights
+from the Hub into this folder.
+
+## Download the trained weights
+
+Published on the Hub (public): <https://huggingface.co/emil-332/chess-piece-cnn-chesscog>
+
+```bash
+pip install -U huggingface_hub
+hf download emil-332/chess-piece-cnn-chesscog \
+    --local-dir models/piece_cnn_chesscog_2026-06-11
+```
+
+This drops `occupancy.{pt,onnx}`, `piece.{pt,onnx}`, and `piece_cnn.yaml` into the
+path `configs/perception/perception.yaml` already points at, so the pipeline runs
+with no further changes.
 
 ## Layout
 
