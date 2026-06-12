@@ -1,28 +1,35 @@
 # Safety limits for the SO-101 safety layer. Loaded by safety/limits.py.
 #
-# [TBD] All numeric limits are PLACEHOLDERS and act as the   1.6 hardware
-# gate: while any are <TBD>, SafetyLayer.is_hardware_ready() is False. DO NOT run
-# hardware until they are filled and verified against the SO-101 (1.6 follow-up +
-# robot-safety-agent review). Never remove or loosen checks to ease experiments —
+# [TBD] All numeric limits are PLACEHOLDERS. While any are <TBD>, 
+# SafetyLayer.is_hardware_ready() is False. DO NOT run
+# hardware until they are filled and verified against the SO-101 
+# Never remove or loosen checks to ease experiments —
 # see docs/safety.md.
 #
 # Every check defaults to enabled. Filling a value must not disable a check.
 safety:
   joint_limits:
     enabled: true
-    values: "<TBD>"            # per-joint [min, max] per SO-101 spec
+    values: "<TBD>"            # list of [min, max] per joint, in action order
+                              # (configs/robot/so101.yaml `joints`), e.g.
+                              # [[-110, 110], [-100, 100], ...]
   action_magnitude:
     enabled: true
-    max_abs_action: "<TBD>"
+    max_abs_action: "<TBD>"   # |action_i| cap (coarse net over all indices)
   gripper_range:
     enabled: true
+    index: "<TBD>"            # action index of the gripper (SO-101: 5)
     min: "<TBD>"
     max: "<TBD>"
   workspace_bounds:
-    enabled: true
-    values: "<TBD>"            # if available
-  max_velocity: "<TBD>"
-  max_delta: "<TBD>"
+    # Cartesian bound; needs forward kinematics, so it is NOT enforced on a
+    # joint-space action. Explicitly disabled (surfaced in disabled_safety_checks,
+    # never silent); the per-joint limits bound the reachable space. Enable only
+    # alongside an FK-based pose check. See docs/safety.md.
+    enabled: false
+    values: "<TBD>"
+  max_velocity: "<TBD>"       # per-index |delta|/dt cap (needs dt at call time)
+  max_delta: "<TBD>"          # per-index |action_i - prev_i| cap per step
   episode_timeout_s: "<TBD>"
   checks:
     reject_nan_inf: true

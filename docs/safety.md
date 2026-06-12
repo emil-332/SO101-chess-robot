@@ -1,8 +1,5 @@
 # Safety
 
-This document expands the Safety Rules section of `  `. The summary in
-`  ` is authoritative and always loaded; this file holds the detail.
-
 **Real-robot safety is mandatory. Never remove safety checks to make
 experiments easier.**
 
@@ -43,9 +40,31 @@ If a safety check fails:
 * return to a safe state if possible
 * do **not** continue the rollout silently
 
-## Deployment scripts
+### Implementation status
 
-   may modify deployment scripts directly, but must:
+`safety/safety_layer.py` enforces all of the above **except** workspace bounds:
+
+* **Enforced now:** NaN/inf, action shape, stale observation, camera dropout,
+  robot disconnect, episode timeout, and the numeric-magnitude checks — per-joint
+  limits, action magnitude, gripper range, and per-step delta / velocity. Each
+  numeric check enforces only once its limit is set; while a limit is `<TBD>` the
+  check is recorded in `SafetyResult.skipped` (never silently passed) and
+  `is_hardware_ready()` reports it.
+* **Workspace bounds:** Cartesian, so they need forward kinematics and are **not**
+  enforced on a joint-space action. `default_limits.yaml` ships this check
+  `enabled: false` (surfaced in `disabled_safety_checks()`, never silent); the
+  per-joint limits bound the reachable space. Enable it only alongside an
+  FK-based pose check.
+* **Hardware gate:** `default_limits.yaml` ships every numeric limit as `<TBD>`,
+  so `is_hardware_ready()` is `False` and `SO101Robot.connect()` refuses to
+  connect. Fill the values from the real SO-101 and get a safety review (the
+  robot-safety-agent) before opening the gate. Filling a value must never disable
+  a check.
+* **Routing:** every action reaches the arm only through
+  `RobotInterface.send_action`, which calls `SafetyLayer.enforce` first
+  (fail-closed). `MockRobot` runs the same routing for tests/dry-runs.
+
+## Deployment scripts
 
 * explain architectural changes before editing
 * preserve safety checks

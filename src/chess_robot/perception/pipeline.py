@@ -68,14 +68,31 @@ def _corners_from(raw: Any) -> BoardCorners | None:
     return BoardCorners(a1=points[0], h1=points[1], h8=points[2], a8=points[3])
 
 
+def _calibration_block(root: Any) -> Mapping[str, Any]:
+    """The corner-calibration block: from ``calibration_file`` if set, else inline.
+
+    A referenced-but-missing ``calibration_file`` yields an empty block (treated as
+    uncalibrated), which is the expected state before the board is calibrated.
+    """
+    calibration_file = root.get("calibration_file")
+    if calibration_file:
+        path = Path(str(calibration_file))
+        if not path.exists():
+            return {}
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        block = data.get("calibration", {}) if isinstance(data, Mapping) else {}
+        return block if isinstance(block, Mapping) else {}
+    inline = root.get("calibration", {})
+    return inline if isinstance(inline, Mapping) else {}
+
+
 def load_perception_config(path: str | Path) -> PerceptionConfig:
     """Load a :class:`PerceptionConfig` from a YAML config file."""
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     root = raw.get("perception", {}) if isinstance(raw, Mapping) else {}
     models = root.get("models", {}) if isinstance(root.get("models"), Mapping) else {}
     cameras = root.get("cameras", {}) if isinstance(root.get("cameras"), Mapping) else {}
-    calibration = root.get("calibration", {})
-    calibration = calibration if isinstance(calibration, Mapping) else {}
+    calibration = _calibration_block(root)
     return PerceptionConfig(
         piece_cnn_config=Path(str(root.get("piece_cnn_config", _DEFAULT_PIECE_CNN_CONFIG))),
         occupancy_onnx=str(models.get("occupancy_onnx", "")),
@@ -85,6 +102,32 @@ def load_perception_config(path: str | Path) -> PerceptionConfig:
         overhead_corners=_corners_from(calibration.get("overhead")),
         side_corners=_corners_from(calibration.get("side")),
     )
+
+
+def _corner_dict(corners: BoardCorners) -> dict[str, list[float]]:
+    return {
+        "a1": list(corners.a1),
+        "h1": list(corners.h1),
+        "h8": list(corners.h8),
+        "a8": list(corners.a8),
+    }
+
+
+def write_calibration_file(
+    path: str | Path,
+    *,
+    overhead: BoardCorners | None = None,
+    side: BoardCorners | None = None,
+) -> None:
+    """Write a lab-specific calibration YAML (consumed via ``calibration_file``)."""
+    block: dict[str, Any] = {}
+    if overhead is not None:
+        block["overhead"] = _corner_dict(overhead)
+    if side is not None:
+        block["side"] = _corner_dict(side)
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(yaml.safe_dump({"calibration": block}, sort_keys=False), encoding="utf-8")
 
 
 def _grounder(corners: BoardCorners) -> SquareGrounder:

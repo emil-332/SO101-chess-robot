@@ -17,8 +17,8 @@ import argparse
 import json
 from pathlib import Path
 
-from chess_robot.perception.camera_utils import corners_from_points
-from chess_robot.perception.square_grounding import BoardCorners, Point
+from chess_robot.perception.camera_utils import click_corners, corners_from_points
+from chess_robot.perception.square_grounding import BoardCorners
 
 
 def corner_record(
@@ -45,22 +45,6 @@ def append_jsonl(manifest: Path, record: dict[str, object]) -> None:
         handle.write(json.dumps(record) + "\n")
 
 
-def _click_corners(image_path: str) -> list[Point]:
-    try:
-        import matplotlib.image as mpimg
-        import matplotlib.pyplot as plt
-    except ImportError as exc:  # pragma: no cover - optional GUI extra
-        raise SystemExit(
-            "matplotlib is required for annotation: pip install -e '.[tools]'"
-        ) from exc
-
-    plt.imshow(mpimg.imread(image_path))
-    plt.title("Click corners in order: a1, h1, h8, a8")
-    points = plt.ginput(4, timeout=0)
-    plt.close()
-    return [(float(x), float(y)) for x, y in points]
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Annotate board corners.")
     parser.add_argument("--image", required=True)
@@ -69,7 +53,7 @@ def main() -> None:
     parser.add_argument("--manifest", required=True, type=Path)
     args = parser.parse_args()
 
-    corners = corners_from_points(_click_corners(args.image))
+    corners = corners_from_points(click_corners(args.image))
     append_jsonl(
         args.manifest, corner_record(args.image, args.camera, args.board_type, corners)
     )

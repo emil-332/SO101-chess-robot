@@ -168,59 +168,63 @@ Outputs: `occupancy.pt` / `piece.pt` (checkpoints) and `occupancy.onnx` /
 `models/<name>/` (kept out of git, see `models/README.md`), and point the
 perception config at them.
 
-### Step 4 (later, needs our data): few-shot fine-tune on the 3D-printed set
+### Step 4 (real board): calibrate, run, and few-shot fine-tune
 
-This adapts the chesscog base to the real pieces. It warm-starts from the chesscog
-checkpoint instead of ImageNet, so a handful of photos is enough.
+With the physical board, the laptop-only flow is: capture frames, calibrate the
+corners, fine-tune the chesscog base on the real pieces, then run perception.
 
 ```bash
-# 1) photograph the starting position from the side camera (a few boards),
-#    label corners with scripts/annotate_corners.py, write a small manifest
-#    (image, corners, fen), then build crops:
-python scripts/prepare_piece_dataset.py --source manifest \
-    --manifest manifests/ours.json --images-root photos/ --out datasets/piece_ours.npz
+pip install -e ".[camera,tools,perception,perception-train]"
 
-# 2) fine-tune from the chesscog base (--init-dir), at a lower learning rate
-#    (set head_lr/full_lr lower in configs/perception/piece_cnn.yaml):
+# 1) capture frames (find indices with `lerobot-find-cameras opencv`)
+python scripts/capture_frames.py --camera overhead=0 --camera side=2 --out-dir frames
+
+# 2) calibrate board corners -> configs/perception/calibration.local.yaml (gitignored)
+python scripts/calibrate_corners.py --frame side=frames/side.png --frame overhead=frames/overhead.png
+```
+
+The fine-tune warm-starts from the chesscog checkpoint, so a handful of photos is
+enough. Photograph the starting position several times from the side camera into
+`photos/start/`, then:
+
+```bash
+# 3) build a manifest (same corners + FEN for all start photos) and crops
+python scripts/build_piece_manifest.py --images-dir photos/start --camera side \
+    --fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR --out manifests/ours.json
+python scripts/prepare_piece_dataset.py --source manifest \
+    --manifest manifests/ours.json --images-root photos/start --out datasets/piece_ours.npz
+
+# 4) fine-tune from the chesscog base (lower head_lr/full_lr in piece_cnn.yaml first)
 python scripts/train_piece_cnn.py --data datasets/piece_ours.npz \
     --init-dir models/piece_cnn_chesscog_2026-06-11 \
     --out-dir outputs/piece_cnn_ours --stage both
 ```
 
-Then copy the new `*.onnx` into `models/<name>/` and update
-`configs/perception/perception.yaml` to point at them. Nothing else changes.
+Then copy the new `*.onnx` into `models/<name>/` and point the `models:` paths in
+`configs/perception/perception.yaml` at them. Nothing else changes.
+
+For a real held-out eval set, photograph varied positions, write a
+`{image: fen}` JSON, and pass it as `build_piece_manifest.py --fen-map labels.json`.
 
 ## Running it in the pipeline
 
 `configs/perception/perception.yaml` wires the trained classifier and the board
 grounding into a `BoardPerception` (the factory is
-`chess_robot.perception.pipeline.build_board_perception`). The config holds the
-model paths and the per-camera board-corner calibration; swapping models or
-recalibrating is a config edit, no code change.
+`chess_robot.perception.pipeline.build_board_perception`). It holds the model
+paths and references a `calibration_file` (the lab-specific, gitignored corner
+calibration written by `calibrate_corners.py`). Swapping models or recalibrating
+is a config edit, no code change.
 
 ```bash
 pip install -e ".[perception]"     # laptop: onnxruntime + pillow
-# calibrate the board corners into the config first (annotate_corners.py), then:
 python scripts/run_perception.py --overhead frames/overhead.png --side frames/side.png
 ```
 
 It prints the perceived position as FEN. `--metadata-fen <placement>` cross-checks
-the reading against a known position. The config ships uncalibrated (null corners)
-and the pipeline refuses to run an uncalibrated piece camera rather than guess, so
-fill `calibration.side` (and optionally `calibration.overhead`) once the board is
-built. The trained-model wiring itself is verified: the exported ONNX models load
-and run through this factory on the laptop with onnxruntime.
-
-### Troubleshooting
-
-- `ModuleNotFoundError: No module named 'onnxscript'` at export: recent torch
-  routes `torch.onnx.export` through the dynamo exporter, which needs onnxscript.
-  It is in the `perception-train` extra; if the image predates that, run
-  `pip install onnxscript` and re-run. (Training checkpoints `*.pt` are saved
-  before export, so only the `*.onnx` files are missing.)
-- ImageNet backbone weights fail to download: set `pretrained: false` in
-  `configs/perception/piece_cnn.yaml` (fine for a plumbing smoke; for the real run
-  keep it true).
+the reading against a known position. Until `calibration.local.yaml` exists the
+board is treated as uncalibrated and the pipeline refuses to run the piece camera
+rather than guess. The trained-model wiring itself is verified: the exported ONNX
+models load and run through this factory on the laptop with onnxruntime.
 
 ## Evaluation
 

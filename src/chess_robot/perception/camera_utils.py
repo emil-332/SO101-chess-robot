@@ -1,4 +1,4 @@
-"""Camera helpers for perception data collection (  1b.2 tooling).
+"""Camera helpers for perception data collection.
 
 Two jobs:
 
@@ -35,6 +35,27 @@ def corners_from_points(points: list[Point]) -> BoardCorners:
         raise ValueError(f"expected 4 corner points (a1, h1, h8, a8), got {len(points)}")
     a1, h1, h8, a8 = points
     return BoardCorners(a1=a1, h1=h1, h8=h8, a8=a8)
+
+
+def click_corners(image_path: str) -> list[Point]:
+    """Show an image and return the 4 clicked corner points (a1, h1, h8, a8 order).
+
+    Interactive: needs a display and the GUI extra (``pip install -e '.[tools]'``);
+    matplotlib is imported lazily so the rest of the module stays dependency-light.
+    """
+    try:
+        import matplotlib.image as mpimg
+        import matplotlib.pyplot as plt
+    except ImportError as exc:  # pragma: no cover - optional GUI extra
+        raise SystemExit(
+            "matplotlib is required for corner clicking: pip install -e '.[tools]'"
+        ) from exc
+
+    plt.imshow(mpimg.imread(image_path))
+    plt.title("Click corners in order: a1, h1, h8, a8")
+    points = plt.ginput(4, timeout=0)
+    plt.close()
+    return [(float(x), float(y)) for x, y in points]
 
 
 def crop_box(

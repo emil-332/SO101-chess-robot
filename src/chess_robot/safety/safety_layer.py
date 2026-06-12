@@ -1,22 +1,25 @@
 """Safety layer: validates every real-robot action; blocks unsafe execution.
 
-**Skeleton (  1.6).** All real-robot actions must pass through this
+All real-robot actions must pass through this
 layer. Fail-closed: :meth:`SafetyLayer.check_action` returns a
 :class:`SafetyResult` and logs any violation; :meth:`SafetyLayer.enforce` raises
 :class:`SafetyViolationError` so a caller cannot continue a rollout silently.
 
-Enforced now: NaN/inf in the action, action shape, stale observations, camera
-dropout, robot disconnect, and episode timeout (the time-based checks skip when
-their limit is unconfigured). **Numeric-magnitude checks (joint limits, action
-magnitude, gripper range, workspace bounds, velocity/delta) are NOT enforced
-yet** — they are explicit stubs returning ``None`` ("not enforced") until the
-``<TBD>`` limits in ``configs/safety/default_limits.yaml`` are filled and
-reviewed (1.6 follow-up). :meth:`SafetyLayer.is_hardware_ready` reports this
-(including an unset ``expected_action_dim``) so nothing runs on hardware with a
-false sense of safety. Checks turned off in config are surfaced via
+Enforced: NaN/inf in the action, action shape, stale observations, camera
+dropout, robot disconnect, episode timeout, and the numeric-magnitude checks
+(per-joint limits, action magnitude, gripper range, per-step delta / velocity).
+Each numeric check enforces only when its limit is configured; while a limit is
+``<TBD>`` the check is recorded in ``skipped`` (never silently passed) and
+:meth:`SafetyLayer.is_hardware_ready` reports it, so nothing runs on hardware
+with a false sense of safety. Workspace bounds are Cartesian and need forward
+kinematics, so they are not enforced on joint-space actions — disable that check
+in config and rely on the per-joint limits, which bound the reachable space.
+
+Checks turned off in config are surfaced via
 :meth:`SafetyLayer.disabled_safety_checks` and logged at construction — a safety
 check is never disabled silently. Pass ``elapsed_s`` to :meth:`enforce` to
-fail-close on episode timeout in the same call.
+fail-close on episode timeout, and ``previous_action`` (+ optional ``dt_s``) to
+enforce the per-step delta / velocity limits in the same call.
 """
 
 from __future__ import annotations
@@ -105,11 +108,14 @@ class SafetyLayer:
         camera_ok: bool = True,
         robot_connected: bool = True,
         elapsed_s: float | None = None,
+        previous_action: Sequence[float] | None = None,
+        dt_s: float | None = None,
     ) -> SafetyResult:
         """Check an action (and observation/episode status) against active checks.
 
-        If ``elapsed_s`` is provided, the episode-timeout check is included so a
-        single :meth:`enforce` call can also fail-close on timeout.
+        ``elapsed_s`` includes the episode-timeout check; ``previous_action`` (and
+        optional ``dt_s``) include the per-step delta / velocity checks, so a single
+        :meth:`enforce` call can fail-close on all of them.
         """
         violations: list[str] = []
         skipped: list[str] = []
@@ -145,8 +151,9 @@ class SafetyLayer:
             violations.extend(timeout_violations)
             skipped.extend(timeout_skipped)
 
-        # Numeric-magnitude checks: not enforced yet (skeleton). Disabled checks
-        # and not-yet-enforced stubs are both recorded in `skipped`, never hidden.
+        # Numeric-magnitude checks. Each enforces only when its limit is set; an
+        # unconfigured limit or a config-disabled check is recorded in `skipped`,
+        # never silently passed.
         numeric_checks = (
             ("joint_limits", self._limits.joint_limits_enabled, self._check_joint_limits),
             (
@@ -164,7 +171,6 @@ class SafetyLayer:
                 self._limits.workspace_bounds_enabled,
                 self._check_workspace_bounds,
             ),
-            ("velocity_delta", True, self._check_velocity_delta),
         )
         for name, enabled, check in numeric_checks:
             if not enabled:
@@ -172,9 +178,15 @@ class SafetyLayer:
                 continue
             outcome = check(action)
             if outcome is None:
-                skipped.append(f"{name}: not enforced yet (limit <TBD>)")
+                skipped.append(f"{name}: not enforced (limit <TBD>)")
             else:
                 violations.extend(outcome)
+
+        velocity_violations, velocity_skipped = self._velocity_outcome(
+            action, previous_action, dt_s
+        )
+        violations.extend(velocity_violations)
+        skipped.extend(velocity_skipped)
 
         result = SafetyResult(
             ok=not violations, violations=tuple(violations), skipped=tuple(skipped)
@@ -216,10 +228,13 @@ class SafetyLayer:
         camera_ok: bool = True,
         robot_connected: bool = True,
         elapsed_s: float | None = None,
+        previous_action: Sequence[float] | None = None,
+        dt_s: float | None = None,
     ) -> Sequence[float]:
         """Return ``action`` if safe, else raise :class:`SafetyViolationError`.
 
-        Pass ``elapsed_s`` to also fail-close on episode timeout in one call.
+        Pass ``elapsed_s`` to also fail-close on episode timeout, and
+        ``previous_action`` (+ optional ``dt_s``) on the delta / velocity limits.
         """
         result = self.check_action(
             action,
@@ -227,32 +242,95 @@ class SafetyLayer:
             camera_ok=camera_ok,
             robot_connected=robot_connected,
             elapsed_s=elapsed_s,
+            previous_action=previous_action,
+            dt_s=dt_s,
         )
         if not result.ok:
             raise SafetyViolationError(result)
         return action
 
-    # --- Numeric-magnitude checks: TODO(1.6 follow-up) ------------------------
-    # Each returns None while unenforced (skeleton). Once implemented, return a
-    # list of violation strings (empty list == passed) using configured limits.
+    # --- Numeric-magnitude checks --------------------------------------------
+    # Each returns a list of violation strings (empty == passed), or None when its
+    # limit is unconfigured (recorded as skipped, not silently passed).
 
     def _check_joint_limits(self, action: Sequence[float]) -> list[str] | None:
-        # TODO(1.6 follow-up): enforce per-joint [min, max] once configured.
-        return None
+        bounds = self._limits.joint_limits_values
+        if bounds is None:
+            return None
+        violations: list[str] = []
+        for index, (low, high) in enumerate(bounds):
+            if index >= len(action):
+                violations.append(f"joint_limits: action has no index {index}")
+                continue
+            value = float(action[index])
+            if value < low or value > high:
+                violations.append(f"joint[{index}]={value} outside [{low}, {high}]")
+        return violations
 
     def _check_action_magnitude(self, action: Sequence[float]) -> list[str] | None:
-        # TODO(1.6 follow-up): enforce |action_i| <= max_abs_action.
-        return None
+        limit = self._limits.max_abs_action
+        if limit is None:
+            return None
+        return [
+            f"action[{i}]={float(a)} exceeds |{limit}|"
+            for i, a in enumerate(action)
+            if abs(float(a)) > limit
+        ]
 
     def _check_gripper_range(self, action: Sequence[float]) -> list[str] | None:
-        # TODO(1.6 follow-up): enforce gripper command within [min, max].
-        return None
+        low, high, index = (
+            self._limits.gripper_min,
+            self._limits.gripper_max,
+            self._limits.gripper_index,
+        )
+        if low is None or high is None or index is None:
+            return None
+        if index >= len(action):
+            return [f"gripper_range: action has no index {index}"]
+        value = float(action[index])
+        if value < low or value > high:
+            return [f"gripper[{index}]={value} outside [{low}, {high}]"]
+        return []
 
     def _check_workspace_bounds(self, action: Sequence[float]) -> list[str] | None:
-        # TODO(1.6 follow-up): enforce target pose within workspace bounds.
+        # Cartesian bound; needs forward kinematics. Not enforceable on a
+        # joint-space action — disable in config and rely on joint_limits.
         return None
 
-    def _check_velocity_delta(self, action: Sequence[float]) -> list[str] | None:
-        # TODO(1.6 follow-up): enforce max velocity / max per-step delta (needs
-        # previous action / state history).
-        return None
+    def _velocity_outcome(
+        self,
+        action: Sequence[float],
+        previous_action: Sequence[float] | None,
+        dt_s: float | None,
+    ) -> tuple[list[str], list[str]]:
+        """Per-step delta (and velocity, if ``dt_s`` given) against the limits."""
+        max_delta = self._limits.max_delta
+        max_velocity = self._limits.max_velocity
+        if max_delta is None and max_velocity is None:
+            return [], ["velocity_delta: max_delta/max_velocity unconfigured"]
+        if previous_action is None:
+            return [], ["velocity_delta: no previous_action provided"]
+        if len(previous_action) != len(action):
+            return ["velocity_delta: previous_action shape mismatch"], []
+
+        deltas = [abs(float(a) - float(p)) for a, p in zip(action, previous_action, strict=True)]
+        violations: list[str] = []
+        skipped: list[str] = []
+        if max_delta is not None:
+            violations += [
+                f"delta[{i}]={d} > max_delta {max_delta}"
+                for i, d in enumerate(deltas)
+                if d > max_delta
+            ]
+        else:
+            skipped.append("max_delta unconfigured")
+        if max_velocity is not None:
+            if dt_s is None or dt_s <= 0:
+                skipped.append("max_velocity: no dt_s provided")
+            else:
+                violations += [
+                    f"velocity[{i}]={d / dt_s} > max_velocity {max_velocity}"
+                    for i, d in enumerate(deltas)
+                    if d / dt_s > max_velocity
+                ]
+        return violations, skipped

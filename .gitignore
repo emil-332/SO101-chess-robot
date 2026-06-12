@@ -23,6 +23,9 @@ ENV/
 !.env.example
 *.local
 
+# ---- Lab-specific calibration (per-board, not shared) ----
+*.local.yaml
+
 # ---- Datasets (tracked separately, e.g. on the Hugging Face Hub) ----
 # Anchored to the repo root so they don't match the src/chess_robot/data package.
 /datasets/

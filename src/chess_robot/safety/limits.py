@@ -33,6 +33,30 @@ def _as_float(value: object) -> float | None:
     return None
 
 
+def _as_int(value: object) -> int | None:
+    """Coerce a config value to int, or None if unset/non-integer."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return int(value)
+    return None
+
+
+def _parse_pairs(value: object) -> tuple[tuple[float, float], ...] | None:
+    """Parse a list of ``[min, max]`` pairs, or None if unset/malformed."""
+    if not isinstance(value, list) or not value:
+        return None
+    pairs: list[tuple[float, float]] = []
+    for item in value:
+        if not isinstance(item, list | tuple) or len(item) != 2:
+            return None
+        low, high = _as_float(item[0]), _as_float(item[1])
+        if low is None or high is None:
+            return None
+        pairs.append((low, high))
+    return tuple(pairs)
+
+
 def _section(data: Mapping[Any, Any], key: str) -> Mapping[Any, Any]:
     value = data.get(key)
     return value if isinstance(value, Mapping) else {}
@@ -52,14 +76,20 @@ class SafetyLimits:
     max_abs_action: float | None = None
     gripper_min: float | None = None
     gripper_max: float | None = None
+    gripper_index: int | None = None
     max_velocity: float | None = None
     max_delta: float | None = None
     episode_timeout_s: float | None = None
     max_observation_age_s: float | None = None
-    # Per-joint / workspace bounds are vectors; the skeleton tracks only whether
-    # they are configured (values stored + enforced in the 1.6 follow-up).
-    joint_limits_configured: bool = False
+    # Per-joint [min, max] bounds in action order (None == unconfigured).
+    joint_limits_values: tuple[tuple[float, float], ...] | None = None
+    # Workspace bounds are Cartesian (need forward kinematics); not enforced on
+    # joint-space actions. Tracked only as configured-or-not.
     workspace_bounds_configured: bool = False
+
+    @property
+    def joint_limits_configured(self) -> bool:
+        return self.joint_limits_values is not None
 
     # Status checks (no numeric config required).
     reject_nan_inf: bool = True
@@ -75,9 +105,11 @@ class SafetyLimits:
         if self.action_magnitude_enabled and self.max_abs_action is None:
             problems.append("action_magnitude.max_abs_action")
         if self.gripper_range_enabled and (
-            self.gripper_min is None or self.gripper_max is None
+            self.gripper_min is None
+            or self.gripper_max is None
+            or self.gripper_index is None
         ):
-            problems.append("gripper_range.min/max")
+            problems.append("gripper_range.min/max/index")
         if self.workspace_bounds_enabled and not self.workspace_bounds_configured:
             problems.append("workspace_bounds")
         if self.max_velocity is None:
@@ -124,11 +156,12 @@ def load_limits(path: str | Path) -> SafetyLimits:
         max_abs_action=_as_float(action_mag.get("max_abs_action")),
         gripper_min=_as_float(gripper.get("min")),
         gripper_max=_as_float(gripper.get("max")),
+        gripper_index=_as_int(gripper.get("index")),
         max_velocity=_as_float(safety.get("max_velocity")),
         max_delta=_as_float(safety.get("max_delta")),
         episode_timeout_s=_as_float(safety.get("episode_timeout_s")),
         max_observation_age_s=_as_float(checks.get("max_observation_age_s")),
-        joint_limits_configured=not _is_unset(joint.get("values")),
+        joint_limits_values=_parse_pairs(joint.get("values")),
         workspace_bounds_configured=not _is_unset(workspace.get("values")),
         reject_nan_inf=bool(checks.get("reject_nan_inf", True)),
         reject_stale_observations=bool(checks.get("reject_stale_observations", True)),

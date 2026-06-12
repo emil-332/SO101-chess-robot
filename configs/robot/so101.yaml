@@ -1,9 +1,21 @@
-# SO-101 robot configuration (follower + leader). 
+# SO-101 robot configuration (follower + leader).
 # Lab-specific values are placeholders — fill before any hardware run.
 # Do not hard-code ports in code; load them from this file.
 robot:
   type: so101_follower
   follower_port: "<FOLLOWER_PORT>"   # discover with: lerobot-find-port
   leader_port: "<LEADER_PORT>"       # discover with: lerobot-find-port
+
+  # Action/observation layout. SO-101 is 5 arm joints + gripper; `joints` lists
+  # them in action-vector order and `gripper_joint` names the gripper entry.
+  joints: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]
+  gripper_joint: gripper
+
+  # Camera name -> OpenCV index (discover with: lerobot-find-cameras opencv).
+  # Names map to the stable observation keys observation.images.<name>.
+  cameras:
+    overhead: "<OVERHEAD_INDEX>"
+    side: "<SIDE_INDEX>"
+
   # Joint / action / gripper / workspace limits live in
   # configs/safety/default_limits.yaml — keep safety limits in one place.
